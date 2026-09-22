@@ -246,11 +246,16 @@ async function main() {
   ]
     .filter(Boolean)
     .join("\n\n");
+  // The two home folders are a convenience default; on a host that has
+  // no ~/Downloads or ~/Documents (a WSL home, for one) creating them on
+  // every start litters the home directory with empty folders nobody
+  // asked for. Grant them only where they already exist; explicitly
+  // configured directories are still created below.
   const defaultAdditionalDirs = [
     legacyPaths.zoteroRoot,
     normalizePathWithHome("~/Downloads", homeDir),
     normalizePathWithHome("~/Documents", homeDir),
-  ].filter((entry): entry is string => Boolean(entry));
+  ].filter((entry): entry is string => Boolean(entry) && existsSync(entry));
   const configuredAdditionalDirs = parseDirectoryList(
     getArg("additional-directories") || process.env.ADAPTER_ADDITIONAL_DIRECTORIES,
     homeDir,
