@@ -71,6 +71,7 @@ describe("ClaudeAgentSdkRuntimeClient", () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
   const originalDefaultMythosModel = process.env.ANTHROPIC_DEFAULT_MYTHOS_MODEL;
+  const originalClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
 
   afterEach(async () => {
     if (originalHome === undefined) {
@@ -87,6 +88,11 @@ describe("ClaudeAgentSdkRuntimeClient", () => {
       delete process.env.ANTHROPIC_DEFAULT_MYTHOS_MODEL;
     } else {
       process.env.ANTHROPIC_DEFAULT_MYTHOS_MODEL = originalDefaultMythosModel;
+    }
+    if (originalClaudeConfigDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR;
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = originalClaudeConfigDir;
     }
     globalPermissionStore.cleanup();
     await Promise.all(
@@ -1211,6 +1217,12 @@ describe("ClaudeAgentSdkRuntimeClient", () => {
       }),
     );
     process.env.HOME = homeDirectory;
+    // The SDK (0.3.299) resolves the user settings path once per process
+    // and keeps it, so a HOME change after an earlier test's
+    // resolveSettings() call is not seen. CLAUDE_CONFIG_DIR is the key
+    // that cache is invalidated on; set it alongside HOME, which the
+    // runtime's own settings-path resolution still reads.
+    process.env.CLAUDE_CONFIG_DIR = join(homeDirectory, ".claude");
     process.env.ANTHROPIC_DEFAULT_MYTHOS_MODEL = "ExcludedEnvironmentModel";
     const runtime = new ClaudeAgentSdkRuntimeClient({
       cwd: directory,
