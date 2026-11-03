@@ -1,7 +1,9 @@
 import type { RuntimeAccountQuota } from "../runtime.js";
 
 type UsageQuery = {
-  usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET?: () => Promise<unknown>;
+  usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET?: (opts?: {
+    skipBehaviors?: boolean;
+  }) => Promise<unknown>;
   close(): void;
 };
 
@@ -67,8 +69,12 @@ export async function probeAccountQuota(
     const read =
       session.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET;
     if (typeof read !== "function") return null;
+    // Without skipBehaviors the SDK also scans every local transcript to
+    // fill the "behaviors" section; on a host with a large history that
+    // took ~37 s against this probe's 8 s timeout, so every quota read
+    // came back null. Only the rate-limit windows are used here.
     const value = await Promise.race([
-      read.call(session),
+      read.call(session, { skipBehaviors: true }),
       new Promise<null>((resolve) => {
         timer = setTimeout(() => resolve(null), timeoutMs);
       }),

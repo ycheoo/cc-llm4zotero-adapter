@@ -58,18 +58,19 @@ describe("Claude account quota", () => {
       expect(normalizeAccountQuota(value)).toBeNull();
   });
 
-  it("closes the metadata process and completes the input without submitting a message", async () => {
+  it("closes the metadata process and completes the input without submitting a message or scanning transcripts", async () => {
     const close = vi.fn();
+    const read = vi.fn(async () => usage);
     let firstMessage: Promise<IteratorResult<never>> | undefined;
     const result = await probeAccountQuota((prompt) => {
       firstMessage = prompt[Symbol.asyncIterator]().next();
       return {
         close,
-        usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET: async () =>
-          usage,
+        usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET: read,
       };
     });
     expect(result).toEqual(quota);
+    expect(read).toHaveBeenCalledExactlyOnceWith({ skipBehaviors: true });
     expect(close).toHaveBeenCalledOnce();
     expect(await firstMessage).toEqual({ done: true, value: undefined });
   });
